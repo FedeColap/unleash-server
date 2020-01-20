@@ -4,6 +4,7 @@ const logger = require('../logger')
 const noteRouter = express.Router()
 const bodyParser = express.json()
 const { notes } = require('../data-store')
+const NotesService = require('./notes-service')
 
 noteRouter
   .route('/notes')
