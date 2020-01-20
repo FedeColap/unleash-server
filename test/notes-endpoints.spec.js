@@ -4,7 +4,7 @@ const app = require('../src/app')
 const { makeNotesArray } = require('./notes-testSeeds.js')
 
 
-describe.only('Notes Endpoints', function() {
+describe('Notes Endpoints', function() {
     let db
 
     before('make knex instance', () => {
@@ -72,9 +72,30 @@ describe.only('Notes Endpoints', function() {
                     .expect(404, { error: { message: `Note doesn't exist` } })
             })
         })
+        context(`Given an XSS attack note`, () => {
+            const maliciousNote = {
+                id: 911,
+                content: 'Naughty naughty very naughty <script>alert("xss");</script>',
+            }
+            
+            beforeEach('insert malicious note', () => {
+                return db
+                    .into('notes')
+                    .insert([ maliciousNote ])
+            })
+            
+            it('removes XSS attack content', () => {
+                return supertest(app)
+                    .get(`/notes/${maliciousNote.id}`)
+                    .expect(200)
+                    .expect(res => {
+                        expect(res.body.content).to.eql('Naughty naughty very naughty &lt;script&gt;alert(\"xss\");&lt;/script&gt;')
+                    })
+            })
+        })
     })
 
-    describe.only(`POST /notes`, () => {
+    describe(`POST /notes`, () => {
         it(`creates a note, responding with 201 and the new note`,  function() {
             const newNote = {
                  content: 'Test new note content'
@@ -96,6 +117,47 @@ describe.only('Notes Endpoints', function() {
                         .get(`/notes/${postRes.body.id}`)
                         .expect(postRes.body)
                 )
+        })
+        it(`responds with 400 and an error message when the 'content' is missing`, () => {
+            return supertest(app)
+                .post('/notes')
+                .send({})
+                .expect(400, {
+                    error: { message: `Missing 'content' in request body` }
+                })
+        })
+    })
+
+    describe(`DELETE /notes/:note_id`, () => {
+        context('Given there are notes in the database', () => {
+            const testNotes = makeNotesArray()
+        
+            beforeEach('insert notes', () => {
+               return db
+                    .into('notes')
+                    .insert(testNotes)
+            })
+        
+            it('responds with 204 and removes the note', () => {
+               const idToRemove = 2
+               const expectedNotes = testNotes.filter(note => note.id !== idToRemove)
+               return supertest(app)
+                    .delete(`/notes/${idToRemove}`)
+                    .expect(204)
+                    .then(res =>
+                        supertest(app)
+                            .get(`/notes`)
+                            .expect(expectedNotes)
+                    )
+            })
+        })
+        context(`Given no notes`, () => {
+            it(`responds with 404`, () => {
+                const noteId = 123456
+                return supertest(app)
+                    .delete(`/notes/${noteId}`)
+                    .expect(404, { error: { message: `Note doesn't exist` } })
+            })
         })
     })
    
