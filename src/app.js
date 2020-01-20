@@ -4,8 +4,9 @@ const morgan = require('morgan')
 const cors = require('cors')
 const helmet = require('helmet')
 const { NODE_ENV } = require('./config')
-const noteRouter = require('./notes/notes-router')
-const userRouter = require('./users/users-router')
+const NotesService = require('./notes/notes-service')
+// const noteRouter = require('./notes/notes-router')
+// const userRouter = require('./users/users-router')
 const logger = require('./logger')
 
 
@@ -44,8 +45,17 @@ app.use(function errorHandler(error, req, res, next) {
      res.status(500).json(response)
 })
 
-app.use(noteRouter)
-app.use(userRouter)
+// app.use(noteRouter)
+// app.use(userRouter)
+
+app.get('/notes', (req, res, next) => {
+     const knexInstance = req.app.get('db')
+     NotesService.getAllNotes(knexInstance)
+     .then(notes => {
+       res.json(notes)
+     })
+     .catch(next)
+})
 
 
 app.get('/', (req, res) => {
