@@ -45,8 +45,8 @@ app.use(function errorHandler(error, req, res, next) {
      res.status(500).json(response)
 })
 
-app.use('/notes', noteRouter)
-app.use(userRouter)
+app.use('/api/notes', noteRouter)
+app.use('/api/users', userRouter)
 
 
 app.get('/', (req, res) => {

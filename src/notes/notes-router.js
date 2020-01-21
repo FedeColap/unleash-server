@@ -1,15 +1,17 @@
 const xss = require('xss')
+const path = require('path')
 const express = require('express')
 const logger = require('../logger')
 const noteRouter = express.Router()
 const jsonParser = express.json()
-const { notes } = require('../data-store')
+// const { notes } = require('../data-store')
 const NotesService = require('./notes-service')
 
 const sanitizeNote = note => ({
   id: note.id,
   content: xss(note.content),
   created: note.created,
+  author: note.author
 })
 
 noteRouter
@@ -24,13 +26,15 @@ noteRouter
     .catch(next)
   })
   .post(jsonParser, (req, res, next) => {
-    const { content } = req.body
+    const { content, author } = req.body
     const newNote = { content }
     if (!content) {
         return res.status(400).json({
             error: { message: `Missing 'content' in request body` }
         })
     }
+    newNote.author = author
+    
     NotesService.insertNote(
          req.app.get('db'),
          newNote
@@ -38,7 +42,7 @@ noteRouter
     .then(note => {
       res
         .status(201)
-        .location(`/notes/${note.id}`)
+        .location(path.posix.join(req.originalUrl, `/${note.id}`))
         .json(sanitizeNote(note))
     })
     .catch(next)
@@ -72,6 +76,27 @@ noteRouter
           req.params.note_id
       )
       .then(() => {
+          res.status(204).end()
+      })
+      .catch(next)
+  })
+  .patch(jsonParser, (req, res, next) => {
+      const { content } = req.body
+      const noteToUpdate = { content }
+      const numberOfValues = Object.values(noteToUpdate).filter(Boolean).length
+      if (numberOfValues === 0) {
+      return res.status(400).json({
+        error: {
+          message: `Request body must contain content`
+        }
+      })
+   }
+      NotesService.updateNote(
+          req.app.get('db'),
+          req.params.note_id,
+          noteToUpdate
+      )
+      .then(numRowsAffected => {
           res.status(204).end()
       })
       .catch(next)
