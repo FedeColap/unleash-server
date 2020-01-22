@@ -12,7 +12,7 @@ const sanitizeNote = note => ({
   id: note.id,
   content: xss(note.content),
   created: note.created,
-  // author: note.author
+  author: note.author
 })
 
 noteRouter
@@ -24,6 +24,7 @@ noteRouter
     )
     .then(notes => {
         res.json(notes.map(sanitizeNote))
+        console.log(note)
     })
     .catch(next)
   })
