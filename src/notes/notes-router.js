@@ -6,6 +6,7 @@ const noteRouter = express.Router()
 const jsonParser = express.json()
 // const { notes } = require('../data-store')
 const NotesService = require('./notes-service')
+const { requireAuth } = require('../middleware/basic-auth')
 
 const sanitizeNote = note => ({
   id: note.id,
@@ -16,6 +17,7 @@ const sanitizeNote = note => ({
 
 noteRouter
   .route('/')
+  .all(requireAuth)
   .get((req, res, next) => {
     NotesService.getAllNotes(
         req.app.get('db')
@@ -50,6 +52,7 @@ noteRouter
 
   noteRouter
   .route('/:note_id')
+  .all(requireAuth)
   .all((req, res, next) => {
       NotesService.getById(
           req.app.get('db'),
