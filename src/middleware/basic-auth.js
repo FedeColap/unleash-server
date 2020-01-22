@@ -28,7 +28,7 @@ function requireAuth(req, res, next) {
             next()
         })
    .catch(next)
-  next()
+ 
   }
   
   module.exports = {

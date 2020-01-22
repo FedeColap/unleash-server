@@ -5,7 +5,7 @@ const { makeNotesArray } = require('./notes-testSeeds.js')
 const { makeUsersArray } = require('./users-testSeeds.js')
 
 
-describe('Notes Endpoints', function() {
+describe.only('Notes Endpoints', function() {
     let db
 
     function makeAuthHeader(user) {
@@ -46,10 +46,18 @@ describe('Notes Endpoints', function() {
             it('GET /api/notes responds with 200 and all of the notes', () => {
                 return supertest(app)
                     .get('/api/notes')
+                    .set('Authorization', makeAuthHeader(testUsers[0]))
                     .expect(200, testNotes)
             })
         })
         context(`Given no notes`, () => {
+            const testUsers = makeUsersArray();
+        
+            beforeEach('insert notes', () => {
+               return db
+                 .into('users')
+                 .insert(testUsers)
+            })
             it(`responds with 200 and an empty list`, () => {
                 return supertest(app)
                     .get('/api/notes')
@@ -85,10 +93,24 @@ describe('Notes Endpoints', function() {
             })
         })
         context(`Given no notes`, () => {
+            const testUsers = makeUsersArray();
+            const testNotes = makeNotesArray()
+        
+            beforeEach('insert notes', () => {
+                return db
+                  .into('users')
+                  .insert(testUsers)
+                  .then(() => {
+                     return db
+                       .into('notes')
+                       .insert(testNotes)
+                   })
+            })
             it(`responds with 404`, () => {
                 const noteId = 123456
                 return supertest(app)
                     .get(`/api/notes/${noteId}`)
+                    .set('Authorization', makeAuthHeader(testUsers[0]))
                     .expect(404, { error: { message: `Note doesn't exist` } })
             })
         })
@@ -125,12 +147,39 @@ describe('Notes Endpoints', function() {
     })
 
     describe(`POST /api/notes`, () => {
+        const testUsers = makeUsersArray();
+            const testNotes = makeNotesArray()
+        
+            beforeEach('insert notes', () => {
+                return db
+                  .into('users')
+                  .insert(testUsers)
+                  .then(() => {
+                     return db
+                       .into('notes')
+                       .insert(testNotes)
+                   })
+            })
+            function makeAuthHeader(user) {
+                const token = Buffer.from(`${user.username}:${user.password}`).toString('base64')
+                return `Basic ${token}`
+            }
+                
+        it(`responds 401 'Unauthorized request' when invalid password`, () => {
+            const userInvalidPass = { username: testUsers[0].username, password: 'wrong' }
+            return supertest(app)
+                .post('/api/notes')
+                .set('Authorization', makeAuthHeader(userInvalidPass))
+                .expect(401, { error: `Unauthorized request` })
+        })        
         it(`creates a note, responding with 201 and the new note`,  function() {
             const newNote = {
                  content: 'Test new note content'
             }
+            
             return supertest(app)
                 .post('/api/notes')
+                .set('Authorization', makeAuthHeader(testUsers[0]))
                 .send(newNote)
                 .expect(201)
                 .expect(res => {
@@ -144,12 +193,14 @@ describe('Notes Endpoints', function() {
                 .then(postRes => 
                     supertest(app)
                         .get(`/api/notes/${postRes.body.id}`)
+                        .set('Authorization', makeAuthHeader(testUsers[0]))
                         .expect(postRes.body)
                 )
         })
         it(`responds with 400 and an error message when the 'content' is missing`, () => {
             return supertest(app)
                 .post('/api/notes')
+                .set('Authorization', makeAuthHeader(testUsers[0]))
                 .send({})
                 .expect(400, {
                     error: { message: `Missing 'content' in request body` }
@@ -158,6 +209,7 @@ describe('Notes Endpoints', function() {
     })
 
     describe(`DELETE /api/notes/:note_id`, () => {
+        
         context('Given there are notes in the database', () => {
             const testUsers = makeUsersArray();
             const testNotes = makeNotesArray()
@@ -178,19 +230,29 @@ describe('Notes Endpoints', function() {
                const expectedNotes = testNotes.filter(note => note.id !== idToRemove)
                return supertest(app)
                     .delete(`/api/notes/${idToRemove}`)
+                    .set('Authorization', makeAuthHeader(testUsers[0]))
                     .expect(204)
                     .then(res =>
                         supertest(app)
                             .get(`/api/notes`)
+                            .set('Authorization', makeAuthHeader(testUsers[0]))
                             .expect(expectedNotes)
                     )
             })
         })
         context(`Given no notes`, () => {
+            const testUsers = makeUsersArray();
+        
+            beforeEach('insert notes', () => {
+                return db
+                  .into('users') 
+                  .insert(testUsers)
+            })
             it(`responds with 404`, () => {
                 const noteId = 123456
                 return supertest(app)
                     .delete(`/api/notes/${noteId}`)
+                    .set('Authorization', makeAuthHeader(testUsers[0]))
                     .expect(404, { error: { message: `Note doesn't exist` } })
             })
         })
@@ -198,10 +260,18 @@ describe('Notes Endpoints', function() {
 
     describe(`PATCH /api/notes/:note_id`, () => {
         context(`Given no notes`, () => {
+            const testUsers = makeUsersArray();
+        
+            beforeEach('insert notes', () => {
+                return db
+                  .into('users') 
+                  .insert(testUsers)
+            })
             it(`responds with 404`, () => {
                 const noteId = 123456
                 return supertest(app)
                     .patch(`/api/notes/${noteId}`)
+                    .set('Authorization', makeAuthHeader(testUsers[0]))
                     .expect(404, { error: { message: `Note doesn't exist` } })
             })
         })
@@ -231,11 +301,13 @@ describe('Notes Endpoints', function() {
                 }
                 return supertest(app)
                     .patch(`/api/notes/${idToUpdate}`)
+                    .set('Authorization', makeAuthHeader(testUsers[0]))
                     .send(updateNote)
                     .expect(204)
                     .then(res => 
                         supertest(app)
                         .get(`/api/notes/${idToUpdate}`)
+                        .set('Authorization', makeAuthHeader(testUsers[0]))
                         .expect(expectedNote)
                     )
             })
@@ -243,6 +315,7 @@ describe('Notes Endpoints', function() {
                 const idToUpdate = 2
                 return supertest(app)
                     .patch(`/api/notes/${idToUpdate}`)
+                    .set('Authorization', makeAuthHeader(testUsers[0]))
                     .send({})
                     .expect(400, {
                         error: {
@@ -253,7 +326,7 @@ describe('Notes Endpoints', function() {
         })
     })
 
-    describe.only(`Protected endpoints`, () => {
+    describe(`Protected endpoints`, () => {
             const testUsers = makeUsersArray();
             const testNotes = makeNotesArray()
         
@@ -290,13 +363,6 @@ describe('Notes Endpoints', function() {
             })
             it(`responds 401 'Unauthorized request' when invalid password`, () => {
                 const userInvalidPass = { username: testUsers[0].username, password: 'wrong' }
-                return supertest(app)
-                    .get(`/api/notes/1`)
-                    .set('Authorization', makeAuthHeader(userInvalidPass))
-                    .expect(401, { error: `Unauthorized request` })
-            })
-            it(`responds 401 'Unauthorized request' when invalid password`, () => {
-                const userInvalidPass = { user_name: testUsers[0].user_name, password: 'wrong' }
                 return supertest(app)
                     .get(`/api/notes/1`)
                     .set('Authorization', makeAuthHeader(userInvalidPass))

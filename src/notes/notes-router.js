@@ -29,6 +29,7 @@ noteRouter
   })
   .post(jsonParser, (req, res, next) => {
     const { content, author } = req.body
+    console.log(req.body)
     const newNote = { content }
     if (!content) {
         return res.status(400).json({
