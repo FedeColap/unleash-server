@@ -173,6 +173,7 @@ describe.only('Notes Endpoints', function() {
                 .expect(401, { error: `Unauthorized request` })
         })        
         it(`creates a note, responding with 201 and the new note`,  function() {
+            const testUser = testUsers[0]
             const newNote = {
                  content: 'Test new note content'
             }
@@ -185,10 +186,11 @@ describe.only('Notes Endpoints', function() {
                 .expect(res => {
                     expect(res.body.content).to.eql(newNote.content)
                     expect(res.body).to.have.property('id')
+                    expect(res.body.author).to.eql(testUser.id)
                     expect(res.headers.location).to.eql(`/api/notes/${res.body.id}`)
-                    const expected = new Date().toLocaleString()
-                    const actual = new Date(res.body.created).toLocaleString()
-                    expect(actual).to.eql(expected)
+                    const expectedDate = new Date().toLocaleString('en', { timeZone: 'UTC' })
+                    const actualDate = new Date(res.body.created).toLocaleString()
+                    expect(actualDate).to.eql(expectedDate)
                 })
                 .then(postRes => 
                     supertest(app)
@@ -324,52 +326,6 @@ describe.only('Notes Endpoints', function() {
                     })
             })
         })
-    })
-
-    describe(`Protected endpoints`, () => {
-            const testUsers = makeUsersArray();
-            const testNotes = makeNotesArray()
-        
-            beforeEach('insert notes', () => {
-               return db
-                 .into('users')
-                 .insert(testUsers)
-                 .then(() => {
-                    return db
-                      .into('notes')
-                      .insert(testNotes)
-                  })
-            })
-    
-        describe(`GET /api/notes/:note_id`, () => {
-            it(`responds with 401 'Missing basic token' when no basic token`, () => {
-            return supertest(app)
-                .get(`/api/notes/123`)
-                .expect(401, { error: `Missing basic token` })
-            })
-            it(`responds 401 'Unauthorized request' when no credentials in token`, () => {
-                const userNoCreds = { username: '', password: '' }
-                return supertest(app)
-                    .get(`/api/notes/123`)
-                    .set('Authorization', makeAuthHeader(userNoCreds))
-                    .expect(401, { error: `Unauthorized request` })
-            })
-            it(`responds 401 'Unauthorized request' when invalid user`, () => {
-                const userInvalidCreds = { username: 'user-not', password: 'existy' }
-                return supertest(app)
-                    .get(`/api/notes/1`)
-                    .set('Authorization', makeAuthHeader(userInvalidCreds))
-                    .expect(401, { error: `Unauthorized request` })
-            })
-            it(`responds 401 'Unauthorized request' when invalid password`, () => {
-                const userInvalidPass = { username: testUsers[0].username, password: 'wrong' }
-                return supertest(app)
-                    .get(`/api/notes/1`)
-                    .set('Authorization', makeAuthHeader(userInvalidPass))
-                    .expect(401, { error: `Unauthorized request` })
-            })
-        })
-        
     })
    
 })

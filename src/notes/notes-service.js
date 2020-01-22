@@ -2,6 +2,17 @@ const NotesService = {
     getAllNotes(knex) {
         return knex.select('*').from('notes')
     },
+    getAllUserNotes(db, author) {
+        return db
+        .from('notes')
+        .rightJoin(
+            'users',
+            'notes.author',
+            'users.id'
+        )
+        .select('*')
+        .where('author', author)
+    },
     getById(knex, id) {
         return knex.from('notes').select('*').where('id', id).first()
     },

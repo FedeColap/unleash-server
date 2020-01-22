@@ -12,15 +12,15 @@ const sanitizeNote = note => ({
   id: note.id,
   content: xss(note.content),
   created: note.created,
-  author: note.author
+  // author: note.author
 })
 
 noteRouter
   .route('/')
   .all(requireAuth)
   .get((req, res, next) => {
-    NotesService.getAllNotes(
-        req.app.get('db')
+    NotesService.getAllUserNotes(
+        req.app.get('db'), req.user.id
     )
     .then(notes => {
         res.json(notes.map(sanitizeNote))
@@ -28,7 +28,7 @@ noteRouter
     .catch(next)
   })
   .post(jsonParser, (req, res, next) => {
-    const { content, author } = req.body
+    const { content } = req.body
     console.log(req.body)
     const newNote = { content }
     if (!content) {
@@ -36,7 +36,7 @@ noteRouter
             error: { message: `Missing 'content' in request body` }
         })
     }
-    newNote.author = author
+    newNote.author = req.user.id
     
     NotesService.insertNote(
          req.app.get('db'),
