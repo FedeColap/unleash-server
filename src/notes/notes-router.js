@@ -24,7 +24,6 @@ noteRouter
     )
     .then(notes => {
         res.json(notes.map(sanitizeNote))
-        console.log(note)
     })
     .catch(next)
   })
