@@ -6,6 +6,7 @@ const helmet = require('helmet')
 const { NODE_ENV } = require('./config')
 const noteRouter = require('./notes/notes-router')
 const userRouter = require('./users/users-router')
+
 const logger = require('./logger')
 
 
@@ -21,7 +22,7 @@ app.use(cors())
 // console.log(process.env.API_TOKEN)
 
 
-//COMMENTING OUT FOR TESTING--------------------------------------------
+// COMMENTING OUT FOR TESTING- the validation is made in the notesrouter-------------------------------------------
 // app.use(function validateBearerToken(req, res, next) {
 
 //      const apiToken = process.env.API_TOKEN
