@@ -1,26 +1,61 @@
-# Express Boilerplate!
+# Unleash Server
 
-This is a boilerplate project used for starting new projects!
+Back-end application for storing and retrieving Information about the users and their next trips abroad. 
+This Repo works with the Front-end Repo [Unleash-react](https://github.com/FedeColap/Unleash-react)
 
-## Set up
+### Link
+## [Live App Demo](https://unleash-react.now.sh/)
+### __Demo-User__ : Username: __Juju__ , Password: __qwerty17__
+___
 
-Complete the following steps to start a new project (NEW-PROJECT-NAME):
+#### This App has been built with: 
 
-1. Clone this repository to your local machine `git clone BOILERPLATE-URL NEW-PROJECTS-NAME`
-2. `cd` into the cloned repository
-3. Make a fresh start of the git history for this project with `rm -rf .git && git init`
-4. Install the node dependencies `npm install`
-5. Move the example Environment file to `.env` that will be ignored by git and read by the express server `mv example.env .env`
-6. Edit the contents of the `package.json` to use NEW-PROJECT-NAME instead of `"name": "express-boilerplate",`
+* React
+* Node.js 
+* Morgan and Winston for logging
+* PostgreSQL database
+* Knex.js for query building
+* Postgrator for versioning
+* Testing on Mocha framework using Chai and Supertest
+___
 
-## Scripts
+### API Documentation
+While the Homepage is visible to everyone, 
+you need to authenticate (register and login) in order to see your personal notes. The app works with "application/json" body for post requests, and returns JSON data.
 
-Start the application `npm start`
+#### Create Account:
+`POST /api/users`
 
-Start nodemon for the application `npm run dev`
+Post `{ username, password, repeatPassword }` object to create a new user entry in the table
+The database will reject the entry if a `username` has already been taken.
+The password must be 8 - 72 character and must contain at least one lowercase letter, uppercase letter, number, and special character
 
-Run the tests `npm test`
+#### Login:
+`POST /api/login`
 
-## Deploying
+Post `{ username, password }` object to log in to the application
 
-When your new project is ready for deployment, add a new Heroku application with `heroku create`. This will make a new git remote called "heroku" and you can then `npm run deploy` which will push to this remote's master branch.
+#### Retrieve all your notes:
+`GET /api/notes`
+
+Protected endpoint: header must include basic Authorization.
+Successful get request will return an array of JSON objects containing `{id, content, created, author}` of the notes of a specific user (empty screen if there are no notes).
+
+#### Add a new note
+`POST /api/notes`
+
+Protected endpoint: header must include basic Authorization , needed to automatically calculate the `author` 
+Successful post request will perform the `POST` request and redirect to the *Landing Page*, where all the notes are immediately available.
+
+#### Update a note
+`PATCH /api/notes`
+
+Protected endpoint: header must include basic Authorization , needed to automatically calculate the `author`.
+Clicking the "update" button of a note redirects to a form where is possible to update the `{content}` of the selected note, while `{id, author}` and `{created}` will remain untouched.
+Successful patch request will perform the `PATCH` request and redirect to the *Landing Page*, where all the notes are immediately available.
+
+#### Delete a note
+`DELETE /api/notes`
+
+Protected endpoint: header must include basic Authorization , needed to automatically calculate the `author`.
+Clicking the "delete" performs the `DELETE` operation immediately, displaying all the remaining notes. 
