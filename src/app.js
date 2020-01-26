@@ -6,6 +6,7 @@ const helmet = require('helmet')
 const { NODE_ENV } = require('./config')
 const noteRouter = require('./notes/notes-router')
 const userRouter = require('./users/users-router')
+const authRouter = require('./users/aut-router')
 
 const logger = require('./logger')
 
@@ -48,6 +49,7 @@ app.use(function errorHandler(error, req, res, next) {
 
 app.use('/api/notes', noteRouter)
 app.use('/api/users', userRouter)
+app.use('/api/login', authRouter)
 
 
 app.get('/', (req, res) => {
